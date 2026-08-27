@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pond Flop Tests</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h1 {
+      color: #4EC9B0;
+    }
+    .test {
+      margin: 1rem 0;
+      padding: 0.5rem;
+      border-left: 4px solid #666;
+    }
+    .pass {
+      border-left-color: #4EC9B0;
+      background: rgba(78, 201, 176, 0.1);
+    }
+    .fail {
+      border-left-color: #F48771;
+      background: rgba(244, 135, 113, 0.1);
+    }
+    .summary {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      font-size: 1.2rem;
+    }
+    .error {
+      color: #F48771;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎣 Pond Flop Logic Tests</h1>
+  <div id="results"></div>
+  <div id="summary" class="summary"></div>
+
+  <script src="logic.js"></script>
+  <script>
+    const results = document.getElementById('results');
+    const summary = document.getElementById('summary');
+    let passed = 0;
+    let failed = 0;
+
+    function assert(condition, testName, expected, actual) {
+      const testDiv = document.createElement('div');
+      testDiv.className = 'test';
+      
+      if (condition) {
+        testDiv.classList.add('pass');
+        testDiv.innerHTML = `✓ ${testName}`;
+        passed++;
+      } else {
+        testDiv.classList.add('fail');
+        testDiv.innerHTML = `✗ ${testName}<br><span class="error">Expected: ${JSON.stringify(expected)}<br>Got: ${JSON.stringify(actual)}</span>`;
+        failed++;
+      }
+      
+      results.appendChild(testDiv);
+    }
+
+    // Test scoreItem
+    assert(scoreItem('fish') === 10, 'scoreItem: fish should be worth 10 points', 10, scoreItem('fish'));
+    assert(scoreItem('boot') === -5, 'scoreItem: boot should be worth -5 points', -5, scoreItem('boot'));
+    assert(scoreItem('tire') === -3, 'scoreItem: tire should be worth -3 points', -3, scoreItem('tire'));
+    assert(scoreItem('can') === 1, 'scoreItem: can should be worth 1 point', 1, scoreItem('can'));
+    assert(scoreItem('unknown') === 0, 'scoreItem: unknown item should be worth 0 points', 0, scoreItem('unknown'));
+
+    // Test isRoundOver
+    assert(
+      isRoundOver(10, false, false) === false, 
+      'isRoundOver: round continues if no one flopped and time remains', 
+      false, 
+      isRoundOver(10, false, false)
+    );
+    assert(
+      isRoundOver(10, true, true) === true, 
+      'isRoundOver: round ends if both players flopped', 
+      true, 
+      isRoundOver(10, true, true)
+    );
+    assert(
+      isRoundOver(30, false, false) === true, 
+      'isRoundOver: round ends after 30 seconds', 
+      true, 
+      isRoundOver(30, false, false)
+    );
+    assert(
+      isRoundOver(35, true, false) === true, 
+      'isRoundOver: round ends if time exceeded even if only one flopped', 
+      true, 
+      isRoundOver(35, true, false)
+    );
+    assert(
+      isRoundOver(15, true, false) === false, 
+      'isRoundOver: round continues if only one player flopped and time remains', 
+      false, 
+      isRoundOver(15, true, false)
+    );
+
+    // Test determineWinner
+    assert(determineWinner(20, 10) === 1, 'determineWinner: player 1 wins with higher score', 1, determineWinner(20, 10));
+    assert(determineWinner(10, 20) === 2, 'determineWinner: player 2 wins with higher score', 2, determineWinner(10, 20));
+    assert(determineWinner(15, 15) === 0, 'determineWinner: tie with equal scores', 0, determineWinner(15, 15));
+    assert(determineWinner(-5, -10) === 1, 'determineWinner: player 1 wins with less negative score', 1, determineWinner(-5, -10));
+    assert(determineWinner(0, 0) === 0, 'determineWinner: tie with zero scores', 0, determineWinner(0, 0));
+
+    // Test isGameComplete
+    assert(isGameComplete(1, 3) === false, 'isGameComplete: game continues in round 1 of 3', false, isGameComplete(1, 3));
+    assert(isGameComplete(3, 3) === false, 'isGameComplete: game continues in round 3 of 3', false, isGameComplete(3, 3));
+    assert(isGameComplete(4, 3) === true, 'isGameComplete: game complete after round 3 of 3', true, isGameComplete(4, 3));
+    assert(isGameComplete(5, 5) === false, 'isGameComplete: game continues in final round', false, isGameComplete(5, 5));
+    assert(isGameComplete(6, 5) === true, 'isGameComplete: game complete after 5 rounds', true, isGameComplete(6, 5));
+
+    // Test randomPondItem
+    const items = [];
+    for (let i = 0; i < 100; i++) {
+      items.push(randomPondItem());
+    }
+    const validItems = ['fish', 'boot', 'tire', 'can'];
+    const allValid = items.every(item => validItems.includes(item));
+    assert(allValid, 'randomPondItem: should only return valid pond items', true, allValid);
+    
+    const hasFish = items.includes('fish');
+    const hasJunk = items.some(item => item !== 'fish');
+    assert(hasFish && hasJunk, 'randomPondItem: should return variety of items', true, hasFish && hasJunk);
+
+    // Display summary
+    const total = passed + failed;
+    summary.innerHTML = `
+      <strong>Tests Complete:</strong> ${passed}/${total} passed
+      ${failed > 0 ? `<br><span class="error">${failed} failed</span>` : '<br>✓ All tests passed!'}
+    `;
+
+    // Exit code for Node.js if running in test environment
+    if (typeof process !== 'undefined' && failed > 0) {
+      process.exit(1);
+    }
+  </script>
+</body>
+</html>
